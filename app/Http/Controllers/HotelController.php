@@ -177,7 +177,7 @@ class HotelController extends Controller
         }
 
         if ($request->hasFile('image')) {
-            $hotel->image = $request->file('image')->store('hotels', 'public');
+            $hotel->image = $request->file('image')->store('hotel_images', 'public');
         }
 
         $hotel->update($request->only(['name', 'location', 'description']));

@@ -96,5 +96,7 @@ const statusClass = (status) => {
 onMounted(fetchBookings)
 </script>
 <style scoped>
-
+.textcolor { 
+  color: #146b9c;
+}
 </style>
