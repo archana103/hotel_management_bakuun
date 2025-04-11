@@ -54,8 +54,8 @@
     </div>
 
     <!-- Register Modal -->
-    <div v-if="showModal" class="modal-backdrop">
-      <div class="modal-content p-4">
+    <div v-if="showModal" class="modal-backdrop d-flex align-items-center justify-content-center" style="position: fixed; top:0; left:0; width:100%; height:100%; background-color: rgba(0,0,0,0.5); z-index: 1050;">
+      <div class="modal-content p-4 bg-white rounded shadow" style="min-width: 400px;">
         <h4>Register New Admin</h4>
         <form @submit.prevent="registerAdmin">
           <div class="mb-2">
@@ -109,7 +109,7 @@ const form = ref({
   name: '',
   email: '',
   password: '',
-  role: 'admin',
+  role: 'admin'
 })
 
 const editForm = ref({
@@ -140,11 +140,13 @@ const registerAdmin = async () => {
     await axios.post('/api/register-admin', form.value, {
       headers: { Authorization: `Bearer ${token}` }
     })
+    alert('Admin registered and welcome email sent!')
     form.value = { name: '', email: '', password: '', role: 'admin' }
     showModal.value = false
     fetchAdmins()
   } catch (err) {
     console.error('Registration failed:', err.response?.data || err)
+    alert(err.response?.data?.message || 'Registration failed.')
   }
 }
 
@@ -164,6 +166,7 @@ const updateAdmin = async () => {
     fetchAdmins(pagination.value.current_page)
   } catch (err) {
     console.error('Update failed:', err.response?.data || err)
+    alert(err.response?.data?.message || 'Update failed.')
   }
 }
 
@@ -177,11 +180,13 @@ const deleteAdmin = async (id) => {
     fetchAdmins(pagination.value.current_page)
   } catch (err) {
     console.error('Delete failed:', err.response?.data || err)
+    alert(err.response?.data?.message || 'Delete failed.')
   }
 }
 
 onMounted(() => fetchAdmins())
 </script>
+
 
 <style scoped>
 .modal-backdrop {

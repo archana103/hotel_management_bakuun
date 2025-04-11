@@ -7,7 +7,8 @@ use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Hash;
-
+use Illuminate\Support\Facades\Mail;
+use App\Mail\WelcomeAdminMail;
 class AdminController extends Controller
 {
     /**
@@ -41,7 +42,11 @@ class AdminController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
-    
+     // Send email only to admin or master
+     if (in_array($request->role, ['admin'])) {
+        Mail::to($user->email)->send(new WelcomeAdminMail($user, $request->password));
+     }
+
         
         $user->syncRoles([$request->role]); 
     
