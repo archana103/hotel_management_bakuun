@@ -1,24 +1,32 @@
 <template>
   <div class="dashboard-container">
-
-    <aside class="sidebar">
-      <ul style="">
-
+    <aside class="sidebar shadow">
+      <div class="sidebar-header mb-4">
+  <h4><i class="bi bi-buildings-fill"></i> HotelMate</h4>
+</div>
+      <ul class="nav flex-column">
         <li :class="{ active: isActive('/user/dashboard/search-hotel') }">
-          <router-link to="/user/dashboard/search-hotel">Search Hotel</router-link>
+          <router-link to="/user/dashboard/search-hotel">
+            <i class="bi bi-search me-2"></i>Search Hotels
+          </router-link>
         </li>
         <li :class="{ active: isActive('/user/dashboard/my-bookings') }">
-          <router-link to="/user/dashboard/my-bookings">My Bookings</router-link>
+          <router-link to="/user/dashboard/my-bookings">
+            <i class="bi bi-calendar-check me-2"></i>My Bookings
+          </router-link>
         </li>
         <li :class="{ active: isActive('/user/dashboard/my-profile') }">
-          <router-link to="/user/dashboard/my-profile">My Profile</router-link>
+          <router-link to="/user/dashboard/my-profile">
+            <i class="bi bi-person-circle me-2"></i>My Profile
+          </router-link>
         </li>
         <li>
-          <button class="btn btn-outline-danger" @click="handleLogout"><i class="bi bi-box-arrow-left"></i> Logout</button>
+          <button class="btn logout-btn mt-3 w-100" @click="handleLogout">
+            <i class="bi bi-box-arrow-left me-2"></i>Logout
+          </button>
         </li>
       </ul>
     </aside>
-
 
     <main class="content">
       <router-view></router-view>
@@ -52,20 +60,32 @@ export default {
 .dashboard-container {
   display: flex;
   min-height: 100vh;
+  background-color: #fefefe; /* soft white background */
 }
 
-/* Sidebar Styles */
 .sidebar {
-  width: 250px;
-  background: #d6e6f5;
-  padding: 20px;
+  width: 260px;
+  background: linear-gradient(to bottom, #f2f9ff, #ffffff); /* baby blue gradient */
+  padding: 30px 20px;
   display: flex;
   flex-direction: column;
   position: fixed;
   height: 100vh;
-  z-index: 1;
+  border-right: 1px solid #e0e0e0;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.03);
 }
 
+.sidebar-header {
+  text-align: center;
+  font-size: 1.5rem;
+  letter-spacing: 1px;
+  font-weight: bold;
+  color: #146b9c; /* lavender accent */
+  margin-bottom: 30px;
+}
+.textcolor { 
+  color: #146b9c;
+}
 .sidebar ul {
   list-style: none;
   padding: 0;
@@ -73,47 +93,58 @@ export default {
 }
 
 .sidebar ul li {
-  margin-bottom: 10px;
+  margin-bottom: 14px;
 }
 
 .sidebar ul li a {
   text-decoration: none;
-  color: #7b8491;
-  display: block;
-  padding: 10px;
-  border-radius: 5px;
-  transition: background 0.3s ease-in-out;
-  font-size: larger;
-  font-weight: 700;
+  color: #2e4053; /* navy muted */
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-weight: 500;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background-color: transparent;
 }
 
-/* Active Link Styling */
-.sidebar ul li.active a {
-  border-bottom: #0a58ca6b solid;
-  color: #22a0af;
+.sidebar ul li a:hover {
+  background-color: #dee9ee; /* mint hover */
+  color: #146b9c; /* darker mint text */
+}
 
+.sidebar ul li.active a {
+  background-color: #146b9c;
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: inset 0 0 0 2px #82c4df;
 }
 
 /* Logout Button */
 .logout-btn {
-  background: #0a58ca6b;
-  color: white;
+  background-color: #f8d7da; /* baby pink */
+  color: #842029;
   border: none;
-  padding: 10px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-weight: 500;
   width: 100%;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background 0.3s ease-in-out;
+  transition: background-color 0.3s ease;
 }
 
 .logout-btn:hover {
-  background: #0a58ca;
+  background-color: #f5c6cb;
+  color: #6c1b24;
 }
 
-/* Content Styles */
+/* Main Content */
 .content {
   flex: 1;
-  padding: 20px;
-  margin-left: 250px;
+  padding: 30px;
+  margin-left: 260px;
+  background-color: #ffffff;
 }
+
+
 </style>

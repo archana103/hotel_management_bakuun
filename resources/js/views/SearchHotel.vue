@@ -1,8 +1,8 @@
 <template>
   <div class="container">
-    <h2 class="mb-4 text-primary">Explore Hotels</h2>
+    
 
-
+    <h2 class="mb-4 fw-bold textcolor"> <i class="bi bi-search me-2"></i>Search Hotels</h2>
     <div class="card p-4 mb-2 shadow-sm border-0 bg-light">
       <div class="row gy-3 gx-4 align-items-end">
 
@@ -253,5 +253,8 @@ onMounted(() => {
   width: 250px;
   height: 150px;
   object-fit: cover;
+}
+.textcolor { 
+  color: #146b9c;
 }
 </style>

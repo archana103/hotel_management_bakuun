@@ -105,7 +105,14 @@ class BookingController extends Controller
      */
     public function show(string $id)
     {
-        return response()->json(Booking::with(['user','room'])->where("user_id",$id)->get(), 200);
+        return response()->json(
+            Booking::with(['user', 'room.hotel'])
+                ->where('user_id', $id)
+                ->orderBy('id', 'desc')
+                ->get(),
+            200
+        );
+        
     }
     public function show_bookings(string $id)
     {
