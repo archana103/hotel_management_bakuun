@@ -2,7 +2,7 @@
   <div>
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h2>Manage Hotels</h2>
-      <router-link to="/dashboard/hotels/create" class="btn btn-outline-primary">
+      <router-link v-if="hasPermission('create hotels')" to="/dashboard/hotels/create" class="btn btn-outline-primary">
         + Add Hotel
       </router-link>
     </div>
@@ -64,10 +64,10 @@
 
               <!-- Actions -->
               <td class="text-nowrap">
-                <router-link :to="`/hotels/${hotel.id}`" class="btn btn-sm btn-outline-primary me-1">
+                <router-link :to="`/hotels/${hotel.id}`" class="btn btn-sm btn-outline-primary me-1" v-if="hasPermission('edit hotels')">
                   View
                 </router-link>
-                <button class="btn btn-sm btn-outline-danger" @click="deleteHotel(hotel.id)">
+                <button v-if="hasPermission('delete hotels')" class="btn btn-sm btn-outline-danger" @click="deleteHotel(hotel.id)">
                   Delete
                 </button>
               </td>
@@ -103,25 +103,40 @@
 const getImageUrl = (path) => {
   return `/storage/${path}`;
 };
-import { ref, onMounted } from 'vue';
+import { ref, onMounted,computed } from 'vue';
 import axios from 'axios';
+import { useStore } from 'vuex';
 
+const store = useStore();
 const hotels = ref({});
-
-const fetchHotels = async (url = '/api/hotels') => {
+const hasPermission = computed(() => store.getters.hasPermission);
+const fetchHotels = async (url = null) => {
   try {
     const token = localStorage.getItem('token');
-    const response = await axios.get(url, {
+    const user = JSON.parse(localStorage.getItem('user'));
+
+    let apiUrl = url || '/api/hotels';
+
+    // Check if user is NOT a Master
+    const isMaster = user.roles?.some(role => role.name.toLowerCase() === 'master');
+
+    if (!isMaster) {
+      apiUrl = url || `/api/hotels_manager/${user.id}`;
+    }
+
+    const response = await axios.get(apiUrl, {
       headers: {
         Authorization: `Bearer ${token}`
       }
     });
-
+console.log(apiUrl);
     hotels.value = response.data;
   } catch (error) {
     console.error('Error fetching hotels:', error);
   }
 };
+
+
 const deleteHotel = async (id) => {
   if (!confirm('Are you sure you want to delete this hotel?')) return
 

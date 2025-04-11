@@ -292,4 +292,16 @@ public function deleteGalleryImage($id)
 
     return response()->json(['message' => 'Image deleted.']);
 }
+public function fetch_hotel_for_managers($id)
+{
+    $hotels = Hotel::with(['rooms', 'amenities', 'images'])
+        ->whereHas('managers', function ($query) use ($id) {
+            $query->where('user_id', $id);
+        })
+        ->orderBy('created_at', 'desc')
+        ->paginate(10);
+
+    return response()->json($hotels, 200);
+}
+
 }

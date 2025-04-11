@@ -8,26 +8,19 @@
       <router-link to="/dashboard/overview" class="d-block mb-2 text-white">Overview</router-link>
 
       <!-- Master-specific -->
-      <router-link
-        v-if="hasPermission('manage admins')"
-        to="/dashboard/admins"
-        class="d-block mb-2 text-white"
-      >
+      <router-link v-if="hasPermission('manage admins')" to="/dashboard/admins"
+        class="d-block mb-2 text-white">
         Manage Admins
       </router-link>
-
       <!-- Admin or Master -->
-      <router-link
-        v-if="hasPermission('create hotels')"
-        to="/dashboard/hotels"
-        class="d-block mb-2 text-white"
-      >
+      <router-link v-if="hasPermission('create hotels') || hasPermission('view assigned hotels')" to="/dashboard/hotels" class="d-block mb-2 text-white">
         Manage Hotels
       </router-link>
 
-     
 
-      <button class="btn btn-outline-danger mt-3" @click="logoutAndRedirect"><i class="bi bi-box-arrow-left"></i> Logout</button>
+
+      <button class="btn btn-outline-danger mt-3" @click="logoutAndRedirect"><i class="bi bi-box-arrow-left"></i>
+        Logout</button>
     </div>
 
     <!-- Main Content -->
@@ -36,23 +29,25 @@
     </div>
   </div>
 </template>
+<script setup>
+import { useStore } from 'vuex';
+import { computed } from 'vue';
+import { useRouter } from 'vue-router';
 
-<script>
-import { mapGetters, mapActions } from 'vuex';
+const store = useStore();
+const router = useRouter();
 
-export default {
-  computed: {
-    ...mapGetters(['getUser', 'hasPermission']),
-  },
-  methods: {
-    ...mapActions(['logout']),
-    logoutAndRedirect() {
-      this.logout();
-      this.$router.push('/');
-    }
-  }
+// Access Vuex getters
+const getUser = computed(() => store.getters.getUser);
+const hasPermission = computed(() => store.getters.hasPermission);
+
+// Logout method
+const logoutAndRedirect = () => {
+  store.dispatch('logout');
+  router.push('/');
 };
 </script>
+
 
 <style scoped>
 a.router-link-exact-active {

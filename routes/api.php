@@ -34,7 +34,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/hotels/{hotel}/images', [HotelController::class, 'uploadGalleryImages']);
     Route::delete('/hotel-images/{id}', [HotelController::class, 'deleteGalleryImage']);
     Route::get('/reports/overview', [ReportController::class, 'overviewReport']);
-
+    Route::get('hotels_manager/{id}', [HotelController::class, 'fetch_hotel_for_managers']);
 });
 Route::resource('amenities', AmenitiesController::class);
 Route::post('/hotels/search', [HotelController::class, 'search']);

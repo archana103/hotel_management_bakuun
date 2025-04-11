@@ -63,7 +63,8 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view assigned hotels',
                 'view rooms', 'create rooms', 'edit rooms',
                 'view bookings', 'edit bookings',
-                'view availability', 'update availability'
+                'view availability', 'update availability',
+                'edit hotels'
             ]);
             
         }
