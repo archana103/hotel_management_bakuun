@@ -2,7 +2,7 @@
   <div class="dashboard-container">
     <aside class="sidebar shadow">
       <div class="sidebar-header mb-4">
-  <h4><i class="bi bi-buildings-fill"></i> HotelMate</h4>
+  <h4><i class="bi bi-buildings-fill"></i> BookStay</h4>
 </div>
       <ul class="nav flex-column">
         <li :class="{ active: isActive('/user/dashboard/search-hotel') }">

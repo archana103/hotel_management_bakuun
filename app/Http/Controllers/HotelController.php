@@ -12,6 +12,9 @@ class HotelController extends Controller
     {
         $query = Hotel::query();
     
+        // Ensure hotel has rooms (base filter)
+        $query->whereHas('rooms');
+    
         // Location filter
         if ($request->filled('location')) {
             $query->where('location', 'LIKE', '%' . $request->location . '%');
@@ -29,7 +32,6 @@ class HotelController extends Controller
                 });
             });
         }
-        
     
         // Min & Max Price filter
         if ($request->filled('min_price') || $request->filled('max_price')) {
@@ -57,11 +59,40 @@ class HotelController extends Controller
             });
         }
     
-        $hotels = $query->with(['rooms', 'amenities', 'images'])->get();
+        // Load relationships and return only hotels with available rooms
+        $hotels = $query->with(['rooms' => function ($roomQuery) use ($request) {
+            // Apply same filters to the rooms being loaded
+            $roomQuery->when($request->filled('check_in') && $request->filled('check_out'), function ($q) use ($request) {
+                $q->whereDoesntHave('bookings', function ($subQ) use ($request) {
+                    $subQ->where('status', '!=', 'cancelled')
+                        ->where(function ($conflict) use ($request) {
+                            $conflict->where('check_in', '<', $request->check_out)
+                                     ->where('check_out', '>', $request->check_in);
+                        });
+                });
+            });
+    
+            $roomQuery->when($request->filled('min_price'), function ($q) use ($request) {
+                $q->where('price', '>=', $request->min_price);
+            });
+    
+            $roomQuery->when($request->filled('max_price'), function ($q) use ($request) {
+                $q->where('price', '<=', $request->max_price);
+            });
+    
+            $roomQuery->when($request->filled('guests'), function ($q) use ($request) {
+                $q->where('capacity', '>=', $request->guests);
+            });
+        }, 'amenities', 'images'])->get();
+    
+        // Filter out hotels with no rooms after eager loading
+        $filteredHotels = $hotels->filter(function ($hotel) {
+            return $hotel->rooms->isNotEmpty();
+        })->values();
     
         return response()->json([
             'message' => 'Hotels fetched successfully',
-            'hotels' => $hotels
+            'hotels' => $filteredHotels
         ], 200);
     }
     

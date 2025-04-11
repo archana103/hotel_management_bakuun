@@ -31,7 +31,12 @@ const routes = [
       { path: "my-bookings", component: MyBookings },
       { path: "my-profile", component: MyProfile },
       { path: "booking/:id", component: BookingDetails },
-      { path: "hotelsview/:id", component: HotelDetails },
+      {
+        path: '/user/dashboard/hotelsview/:id',
+        name: 'HotelDetails',
+        component: () => import('@/views/HotelDetails.vue') // or whatever file you're using
+      }
+      
       
     ],
   },

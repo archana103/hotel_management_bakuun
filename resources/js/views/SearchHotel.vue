@@ -1,29 +1,31 @@
 <template>
-  <div class="container">
-    
+  <div class="container py-4">
 
-    <h2 class="mb-4 fw-bold textcolor"> <i class="bi bi-search me-2"></i>Search Hotels</h2>
-    <div class="card p-4 mb-2 shadow-sm border-0 bg-light">
+    <!-- Search Heading -->
+    <h2 class="mb-4 fw-bold textcolor">
+      <i class="bi bi-search me-2"></i>Search Hotels
+    </h2>
+
+    <!-- Filter Card -->
+    <div class="card p-4 mb-4 shadow-sm border-0 bg-light">
       <div class="row gy-3 gx-4 align-items-end">
 
         <div class="col-md-3">
           <label class="form-label">Location</label>
-          <input type="text" v-model="filters.location" placeholder="Enter Location" class="form-control"
-            value="india" />
+          <input type="text" v-model="filters.location" placeholder="Enter Location" class="form-control" />
         </div>
 
         <div class="col-md-3">
           <label class="form-label d-flex justify-content-between">
-            Max Price (Rs)
+            Max Price (₹)
             <span class="text-muted small">{{ filters.max_price }}</span>
           </label>
-          <input type="range" min="0" max="10000" step="50" v-model="filters.max_price" class="form-range"
-            value="3000" />
+          <input type="range" min="0" max="10000" step="50" v-model="filters.max_price" class="form-range" />
         </div>
 
         <div class="col-md-2">
           <label class="form-label">Guests</label>
-          <input type="number" min="1" v-model="filters.guests" placeholder="Guests" class="form-control" value="2" />
+          <input type="number" min="1" v-model="filters.guests" placeholder="Guests" class="form-control" />
         </div>
 
         <div class="col-md-2">
@@ -36,12 +38,12 @@
           <input type="date" v-model="filters.check_out" class="form-control" />
         </div>
 
-        <div class="col-12 mt-2">
+        <!-- Amenities Filter -->
+        <div class="col-12 mt-3">
           <label class="form-label fw-semibold">Amenities</label>
           <div class="d-flex flex-wrap gap-3">
-            <div v-for="amenity in availableAmenities" :key="amenity.id" class="form-check">
-              <input type="checkbox" :value="amenity.id" v-model="filters.amenities" class="form-check-input"
-                :id="`amenity-${amenity.id}`" />
+            <div v-for="amenity in availableAmenities" :key="amenity.id" class="form-check me-3">
+              <input type="checkbox" :value="amenity.id" v-model="filters.amenities" class="form-check-input" :id="`amenity-${amenity.id}`" />
               <label class="form-check-label" :for="`amenity-${amenity.id}`">
                 {{ amenity.name }}
               </label>
@@ -49,74 +51,83 @@
           </div>
         </div>
 
-        <div class="col-12 d-flex justify-content-center mt-3">
+        <!-- Buttons -->
+        <div class="col-12 d-flex justify-content-center mt-4">
           <button @click="fetchHotels" class="btn btn-primary px-5 me-3">
-            <i class="bi bi-search"></i> Hotels
+            <i class="bi bi-search"></i> Search Hotels
           </button>
           <button @click="clearResults" class="btn btn-outline-secondary px-5">
-            <i class="bi bi-x-lg"></i> Results
+            <i class="bi bi-x-lg"></i> Clear Results
           </button>
         </div>
+
       </div>
     </div>
 
+    <!-- Loader -->
+    <div v-if="loading" class="text-center text-primary fw-semibold py-5">
+      <div class="spinner-border text-primary mb-2" role="status"></div>
+      <p>Loading hotels...</p>
+    </div>
 
-    <div v-if="loading" class="text-center text-primary fw-semibold">Loading hotels...</div>
+    <!-- No Results -->
+    <div v-else-if="hotels.length === 0" class="text-center my-5 text-muted">
+      <i class="bi bi-buildings fs-1 d-block mb-2"></i>
+      No hotels match your search.
+    </div>
 
+    <!-- Results -->
+    <div v-else class="row gy-4">
+      <div v-for="hotel in hotels" :key="hotel.id" class="col-md-6">
+        <div class="card shadow-sm border-0 overflow-hidden flex-md-row h-100">
+          
+          <!-- Hotel Image -->
+          <img :src="getImageUrl(hotel.image)" alt="Hotel Image"
+               class="hotel-thumb object-fit-cover" 
+               style="width: 250px; height: 200px; object-fit: cover;" />
 
-    <div v-else>
-      <div v-if="hotels.length === 0" class="text-center my-5 text-muted">
-        <i class="bi bi-buildings fs-1 d-block mb-2"></i>
-        No hotels match your search.
-      </div>
+          <!-- Hotel Info -->
+          <div class="card-body d-flex flex-column justify-content-between">
+            <div>
+              <h5 class="card-title mb-1 fw-bold">{{ hotel.name }}</h5>
+              <p class="text-muted small mb-2">
+                <i class="bi bi-geo-alt-fill me-1"></i>{{ hotel.location }}
+              </p>
+              <p class="small text-muted mb-2">
+                <strong>Amenities:</strong>
+                <span v-for="(amenity, index) in hotel.amenities" :key="amenity.id">
+                  {{ amenity.name }}<span v-if="index < hotel.amenities.length - 1">, </span>
+                </span>
+              </p>
+              <p v-if="hotel.rooms.length" class="fw-bold text-primary mb-2">
+                From ₹{{ getMinPrice(hotel.rooms) }} / night
+              </p>
+              <p v-else class="text-muted">No rooms available</p>
+            </div>
 
-      <div class="d-flex flex-column gap-4" style="border: grey;">
-        <div v-for="hotel in hotels" :key="hotel.id" class="card flex-row shadow-sm border-0 overflow-hidden"
-          style="width: 70%;">
-
-          <img :src="getImageUrl(hotel.image)" alt="Hotel Image" class="hotel-thumb" />
-
-
-          <div class="card-body" style="text-align: center;">
-            <h5 class="card-title mb-1">{{ hotel.name }}</h5>
-            <p class="text-muted small mb-2">
-              <i class="bi bi-geo-alt-fill me-1"></i>{{ hotel.location }}
-            </p>
-            <p class="small text-muted mb-2">
-              <strong>Amenities:</strong>
-              <span v-for="(amenity, index) in hotel.amenities" :key="amenity.id">
-                {{ amenity.name }}<span v-if="index < hotel.amenities.length - 1">, </span>
-              </span>
-            </p>
-            <p v-if="hotel.rooms.length" class="fw-bold text-primary mb-0">
-              From ${{ getMinPrice(hotel.rooms) }} / night
-            </p>
-
-
-          </div>
-          <div v-if="hotel.rooms.length">
-            <p class="fw-bold text-dark">Available Rooms:</p>
-            <ul class="list-unstyled">
-              <li v-for="room in hotel.rooms" :key="room.id" class="text-muted small">
-                {{ room.name }} - Capacity: {{ room.capacity }} - Price: ₹{{ room.price }}
-              </li>
-            </ul>
-            <router-link :to="`/user/dashboard/hotelsview/${hotel.id}`" class="btn btn-outline-primary btn-sm mt-2">
+            <!-- Room List -->
+            <div v-if="hotel.rooms.length">
+              <p class="fw-bold mb-1">Available Rooms:</p>
+              <ul class="list-unstyled small mb-2">
+                <li v-for="room in hotel.rooms" :key="room.id" class="text-muted">
+                  {{ room.name }} – Capacity: {{ room.capacity }}, Price: ₹{{ room.price }}
+                </li>
+              </ul>
+                <!-- View Button -->
+            <router-link :to="`/user/dashboard/hotelsview/${hotel.id}`" class="btn btn-outline-primary btn-sm align-self-start mt-2">
               View Hotel
             </router-link>
+            </div>
+
+          
           </div>
-          <div v-else>
-            No room Available
-          </div>
-
-
-
         </div>
       </div>
     </div>
 
   </div>
 </template>
+
 
 
 
@@ -250,9 +261,8 @@ onMounted(() => {
 
 <style>
 .hotel-thumb {
-  width: 250px;
-  height: 150px;
-  object-fit: cover;
+  border-top-left-radius: 0.375rem;
+  border-bottom-left-radius: 0.375rem;
 }
 .textcolor { 
   color: #146b9c;
