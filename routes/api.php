@@ -18,6 +18,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::resource('hotels', HotelController::class);
     Route::resource('rooms', RoomController::class);
+    Route::post('/check-availability', [BookingController::class, 'checkAvailability']);
     Route::resource('bookings', BookingController::class);
     Route::put('/user/profile', [UserController::class, 'update']);
     Route::get('/bookings_details/{id}', [BookingController::class, 'show_bookings']);
@@ -35,6 +36,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/hotel-images/{id}', [HotelController::class, 'deleteGalleryImage']);
     Route::get('/reports/overview', [ReportController::class, 'overviewReport']);
     Route::get('hotels_manager/{id}', [HotelController::class, 'fetch_hotel_for_managers']);
+});
+Route::middleware('auth:sanctum')->get('/notifications', function (Request $request) {
+    return $request->user()->notifications;
 });
 Route::resource('amenities', AmenitiesController::class);
 Route::post('/hotels/search', [HotelController::class, 'search']);

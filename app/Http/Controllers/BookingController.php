@@ -7,6 +7,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Validator;
+use App\Notifications\BookingCreated;
+use Illuminate\Support\Facades\Notification;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
 class BookingController extends Controller
 {
     /**
@@ -29,75 +35,123 @@ class BookingController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'room_id'   => 'required|exists:rooms,id',
-            'check_in'  => 'required|date|after_or_equal:today',
-            'check_out' => 'required|date|after:check_in',
-            'user_id'   => 'nullable|exists:users,id', 
-        ]);
-    
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-    
-        $room = Room::findOrFail($request->room_id);
-    
-        // Check if the room is available
-        $overlap = Booking::where('room_id', $room->id)
-            ->where('status', '!=', 'cancelled')
-            ->where(function ($query) use ($request) {
-                $query->whereBetween('check_in', [$request->check_in, $request->check_out])
-                      ->orWhereBetween('check_out', [$request->check_in, $request->check_out])
-                      ->orWhere(function ($q) use ($request) {
-                          $q->where('check_in', '<=', $request->check_in)
-                            ->where('check_out', '>=', $request->check_out);
-                      });
-            })
-            ->exists();
-    
-        if ($overlap) {
-            return response()->json(['message' => 'Room is not available for the selected dates'], 400);
-        }
-    
-        // Calculate total price
-        $days = Carbon::parse($request->check_in)->diffInDays($request->check_out);
-        $totalPrice = $room->price * $days;
-    
-        // Determine user ID
-        $userId = $request->filled('user_id') ? $request->user_id : auth()->id();
-    
-        // Create the booking
-        $booking = Booking::create([
-            'user_id'     => $userId,
-            'room_id'     => $room->id,
-            'check_in'    => $request->check_in,
-            'check_out'   => $request->check_out,
-            'total_price' => $totalPrice,
-            'status'      => 'pending',
-        ]);
-    
-        // Update room status to "booked"
-        $room->status = 'booked';
-        $room->save();
-    
-        // Fetch booking summary
-        $bookingSummary = Booking::with(['room.hotel'])->find($booking->id);
-    
-        return response()->json([
-            'message' => 'Booking confirmed successfully!',
-            'booking' => [
-                'booking_id'  => $bookingSummary->booking_id,
-                'hotel_name'  => $bookingSummary->room->hotel->name,
-                'room_type'   => $bookingSummary->room->room_type,
-                'check_in'    => $bookingSummary->check_in,
-                'check_out'   => $bookingSummary->check_out,
-                'total_price' => $bookingSummary->total_price,
-                'status'      => $bookingSummary->status,
-            ],
-        ], 201);
+    public function checkAvailability(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'room_id'   => 'required|exists:rooms,id',
+        'check_in'  => 'required|date|after_or_equal:today',
+        'check_out' => 'required|date|after:check_in',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json(['errors' => $validator->errors()], 422);
     }
+
+    $room = Room::findOrFail($request->room_id);
+
+    $overlap = Booking::where('room_id', $room->id)
+        ->where('status', '!=', 'cancelled')
+        ->where(function ($query) use ($request) {
+            $query->whereBetween('check_in', [$request->check_in, $request->check_out])
+                  ->orWhereBetween('check_out', [$request->check_in, $request->check_out])
+                  ->orWhere(function ($q) use ($request) {
+                      $q->where('check_in', '<=', $request->check_in)
+                        ->where('check_out', '>=', $request->check_out);
+                  });
+        })
+        ->exists();
+
+    if ($overlap) {
+        return response()->json(['available' => false, 'message' => 'Room is not available for the selected dates']);
+    }
+
+    return response()->json(['available' => true]);
+}
+
+public function store(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'room_id'   => 'required|exists:rooms,id',
+        'check_in'  => 'required|date|after_or_equal:today',
+        'check_out' => 'required|date|after:check_in',
+        'user_id'   => 'nullable|exists:users,id', 
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json(['errors' => $validator->errors()], 422);
+    }
+
+    $room = Room::findOrFail($request->room_id);
+
+    // Check if the room is available
+    $overlap = Booking::where('room_id', $room->id)
+        ->where('status', '!=', 'cancelled')
+        ->where(function ($query) use ($request) {
+            $query->whereBetween('check_in', [$request->check_in, $request->check_out])
+                  ->orWhereBetween('check_out', [$request->check_in, $request->check_out])
+                  ->orWhere(function ($q) use ($request) {
+                      $q->where('check_in', '<=', $request->check_in)
+                        ->where('check_out', '>=', $request->check_out);
+                  });
+        })
+        ->exists();
+
+    if ($overlap) {
+        return response()->json(['message' => 'Room is not available for the selected dates'], 400);
+    }
+
+    // Calculate total price
+    $days = Carbon::parse($request->check_in)->diffInDays($request->check_out);
+    $totalPrice = $room->price * $days;
+
+    // Determine user ID
+    $userId = $request->filled('user_id') ? $request->user_id : auth()->id();
+
+    // Create the booking
+    $booking = Booking::create([
+        'user_id'     => $userId,
+        'room_id'     => $room->id,
+        'check_in'    => $request->check_in,
+        'check_out'   => $request->check_out,
+        'total_price' => $totalPrice,
+        'status'      => 'pending',
+    ]);
+
+    // Update room status to "booked"
+    $room->status = 'booked';
+    $room->save();
+
+    $assignedManagerIds = DB::table('hotel_user')
+        ->where('hotel_id', $room->hotel->id)
+        ->pluck('user_id');
+  
+    $hotelManagers = User::whereIn('id', $assignedManagerIds)
+        ->whereHas('roles', function ($q) {
+            $q->where('name', 'admin');
+        })
+        ->get();
+     
+        Log::info('Managers to notify:', $hotelManagers->pluck('id')->toArray());
+        Log::info('Total managers: ' . $hotelManagers->count());
+
+    Notification::send($hotelManagers, new BookingCreated($booking));
+
+    // Fetch booking summary
+    $bookingSummary = Booking::with(['room.hotel'])->find($booking->id);
+
+    return response()->json([
+        'message' => 'Booking confirmed successfully!',
+        'booking' => [
+            'booking_id'  => $bookingSummary->booking_id,
+            'hotel_name'  => $bookingSummary->room->hotel->name,
+            'room_type'   => $bookingSummary->room->room_type,
+            'check_in'    => $bookingSummary->check_in,
+            'check_out'   => $bookingSummary->check_out,
+            'total_price' => $bookingSummary->total_price,
+            'status'      => $bookingSummary->status,
+        ],
+    ], 201);
+}
     
     
     /**

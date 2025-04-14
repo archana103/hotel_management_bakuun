@@ -80,52 +80,43 @@
       <!-- Amenities -->
       <div class="mb-3">
         <div class="mb-3">
-        <strong class="textcolor">Amenities:</strong>
-        <span v-if="hotel.amenities.length">
-          <span v-for="(amenity, index) in hotel.amenities" :key="amenity.id">
-            {{ amenity.name }}<span v-if="index < hotel.amenities.length - 1">, </span>
+          <strong class="textcolor">Amenities:</strong>
+          <span v-if="hotel.amenities.length">
+            <span v-for="(amenity, index) in hotel.amenities" :key="amenity.id">
+              {{ amenity.name }}<span v-if="index < hotel.amenities.length - 1">, </span>
+            </span>
           </span>
-        </span>
-        <span v-else class="text-muted">No amenities listed.</span>
-      </div>
+          <span v-else class="text-muted">No amenities listed.</span>
+        </div>
         <span v-if="hotel.rooms.length">
-  <div>
-    <h5 class="fw-bold textcolor">Available Rooms:</h5>
-    <ul class="list-group">
-      <li
-        v-for="room in hotel.rooms"
-        :key="room.id"
-        class="list-group-item d-flex justify-content-between align-items-center flex-wrap"
-      >
-        <div>
-          <strong>{{ room.room_type }}</strong> &mdash;
-          Capacity: {{ room.capacity }} guests &mdash;
-          ₹{{ room.price }} / night
-        </div>
+          <div>
+            <h5 class="fw-bold textcolor">Available Rooms:</h5>
+            <ul class="list-group">
+              <li v-for="room in hotel.rooms" :key="room.id"
+                class="list-group-item d-flex justify-content-between align-items-center flex-wrap">
+                <div>
+                  <strong>{{ room.room_type }}</strong> &mdash;
+                  Capacity: {{ room.capacity }} guests &mdash;
+                  ₹{{ room.price }} / night
+                </div>
 
-        <div class="d-flex align-items-center gap-2">
-          <span
-            class="badge rounded-pill"
-            style="font-size: medium;"
-            :class="room.current_status === 'available' ? 'bg-success' : 'bg-danger'"
-          >
-            {{ room.current_status }} For today
-          </span>
-          <button
-            class="btn btn-outline-primary btn-sm"
-            @click="openBookingModal(room)"
-          >
-            Book
-          </button>
-        </div>
-      </li>
-    </ul>
-  </div>
-</span>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="badge rounded-pill" style="font-size: medium;"
+                    :class="room.current_status === 'available' ? 'bg-success' : 'bg-danger'">
+                    {{ room.current_status }} For today
+                  </span>
+                  <button class="btn btn-outline-primary btn-sm" @click="openBookingModal(room)">
+                    Book
+                  </button>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </span>
 
         <span v-else class="text-muted">No rooms listed.</span>
       </div>
-     
+
 
     </div>
 
@@ -154,9 +145,25 @@
             </div>
             <div class="mb-3">
               <label class="form-label">Guests</label>
-              <input type="number" v-model="booking.guests" class="form-control" min="1" required />
+              <input type="number" v-model.number="booking.guests" class="form-control" :min="1"
+                :max="selectedRoom?.capacity || 1" required />
+              <small v-if="booking.guests > selectedRoom?.capacity" class="text-danger">
+                Max guests allowed: {{ selectedRoom?.capacity }}
+              </small>
             </div>
-            <button type="submit" class="btn btn-primary w-100">Confirm Booking</button>
+
+
+            <div v-if="booking.check_in && booking.check_out">
+              <small :class="isAvailable ? 'text-success' : 'text-danger'">
+                {{ isAvailable ? 'Room is available' : 'Room is not available for selected dates' }}
+              </small>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100"
+              :disabled="!isAvailable || !booking.check_in || !booking.check_out">
+              Confirm Booking
+            </button>
+
           </form>
         </div>
       </div>
@@ -166,12 +173,13 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, nextTick } from 'vue';
+import { ref, reactive, onMounted, nextTick, watch } from 'vue';
 import axios from 'axios';
 import { useRoute } from 'vue-router';
 import { useStore } from 'vuex';
 const galleryModal = ref(null);
 const carousel = ref(null);
+const isAvailable = ref(true);
 const currentIndex = ref(0);
 const hotel = ref(null);
 const selectedRoom = ref(null);
@@ -206,13 +214,17 @@ const closeSlider = () => {
 
 const openBookingModal = (room) => {
   selectedRoom.value = room;
+  booking.room_id = room.id;
   booking.check_in = '';
   booking.check_out = '';
-  booking.guests = 1;
+  booking.guests = room.capacity; // Set default guests to max capacity
 
-  const modal = new bootstrap.Modal(bookingModal.value);
-  modal.show();
-  modalInstance.value = modal;
+  isAvailable.value = false;
+  nextTick(() => {
+    const modal = new bootstrap.Modal(bookingModal.value);
+    modal.show();
+    modalInstance.value = modal;
+  });
 };
 
 const closeModal = () => {
@@ -222,9 +234,13 @@ const closeModal = () => {
 };
 
 const submitBooking = async () => {
+  if (booking.guests > selectedRoom.value.capacity) {
+    alert(`Maximum guests allowed for this room is ${selectedRoom.value.capacity}`);
+    return;
+  }
+
   try {
     const token = store.state.token;
-
     const payload = {
       room_id: selectedRoom.value.id,
       check_in: booking.check_in,
@@ -238,14 +254,48 @@ const submitBooking = async () => {
       },
     });
 
-    alert('Booking successful!'); 
+    alert('Booking successful!');
     closeModal();
-  
   } catch (err) {
     console.error('Booking failed:', err);
     alert('Failed to book room. Please try again.');
   }
 };
+
+watch(
+  () => [booking.check_in, booking.check_out],
+  async ([checkIn, checkOut]) => {
+    if (!checkIn || !checkOut) return;
+
+    const token = store.state.token;
+
+    try {
+      const response = await axios.post(
+        '/api/check-availability',
+        {
+          room_id: selectedRoom.value.id,
+          check_in: checkIn,
+          check_out: checkOut,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.data.available) {
+        alert(response.data.message);
+        isAvailable.value = false;
+      } else {
+        isAvailable.value = true;
+      }
+    } catch (err) {
+      console.error('Error checking availability:', err);
+    }
+  }
+);
+
 
 const fetchRooms = async () => {
   const token = store.state.token;
@@ -259,19 +309,19 @@ const fetchRooms = async () => {
 
     const roomList = res.data;
 
-for (const room of roomList) {
-  const availability = await axios.get(`/api/rooms/${room.id}/availability`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  room.current_status = availability.data.status;
+    for (const room of roomList) {
+      const availability = await axios.get(`/api/rooms/${room.id}/availability`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      room.current_status = availability.data.status;
 
-}
+    }
 
-// Or log entire list after loop
+    // Or log entire list after loop
 
 
-// Assign to hotel.rooms (make sure `hotel.value.rooms` exists)
-hotel.value.rooms = roomList;
+    // Assign to hotel.rooms (make sure `hotel.value.rooms` exists)
+    hotel.value.rooms = roomList;
 
   } catch (err) {
     console.error('Failed to fetch rooms or availability:', err)
@@ -299,8 +349,7 @@ onMounted(async () => {
 });
 </script>
 <style>
-
-.textcolor { 
+.textcolor {
   color: #146b9c;
 }
 </style>
