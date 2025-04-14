@@ -31,9 +31,7 @@
       <div v-if="showWelcome" class="alert alert-success">
         👋 Welcome, {{ getUser?.name || 'User' }}!
       </div>
-      <span v-if="notifications.length > 0" class="notification-count">
-      {{ notifications.length }}
-    </span>
+
       <!-- Notifications for Hotel Managers -->
       <HotelManagerNotifications v-if="getUser?.role === 'Hotel Manager'" />
 

@@ -1,14 +1,14 @@
+<!-- HotelManagerNotifications.vue -->
 <template>
+  <div>
+    <span v-if="notifications.length > 0" class="notification-count">
+      {{ notifications.length }}
+    </span>
+
     <div class="notifications-panel">
       <div v-if="loading" class="loading-spinner">Loading notifications...</div>
-  
       <div v-else>
-        <!-- Check if notifications exist and display a message if empty -->
-        <div v-if="notifications && notifications.length === 0" class="no-notifications">
-          No notifications found.
-        </div>
-  
-        <!-- Display notifications if available -->
+        <div v-if="notifications.length === 0" class="no-notifications">No notifications found.</div>
         <ul v-else>
           <li v-for="(notification, index) in notifications" :key="index" class="notification-item">
             <p class="font-semibold">{{ notification.data.message }}</p>
@@ -17,8 +17,9 @@
         </ul>
       </div>
     </div>
-  </template>
-  
+  </div>
+</template>
+
   <script setup>
   import { ref, onMounted } from 'vue';
   import axios from 'axios';
@@ -32,9 +33,10 @@
     try {
       const response = await axios.get('/api/notifications', {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`, // Ensure token is correctly stored
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
       });
+      console.warn('Notifications:', response.data.data);
       // Handle the case where data is missing or incorrectly formatted
       notifications.value = response.data.data || response.data || [];
     } catch (error) {

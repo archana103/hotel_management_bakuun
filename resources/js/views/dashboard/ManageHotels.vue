@@ -129,7 +129,7 @@ const fetchHotels = async (url = null) => {
         Authorization: `Bearer ${token}`
       }
     });
-console.log(apiUrl);
+// console.log(apiUrl);
     hotels.value = response.data;
   } catch (error) {
     console.error('Error fetching hotels:', error);
